@@ -30,6 +30,9 @@ global _start
 
 _start:
 	nop						; This no-op keeps gdb happy...
+	; Just for testing
+	mov RAX, Str
+
 	call Read				; Call read function
 	call Convert			; Call convert function --> change name and comment
 	call Print
@@ -43,10 +46,11 @@ Read:
 	mov RDX, BUFFLEN		; Move size of Buff into RBX
 	int	80h					; make Syscall --> to change
 
-	mov RBP, RAX			; Save # of bytes read from file for later --> to change
+	mov RBP, RAX
+	cmp RBP, 0				; If eax=0, sys_read reached EOF on stdin --> to change
+	je Exit					; Jump If Equal (to 0, from compare) --> to change
 
 ; Number of bits read from input
-	mov	RAX, RBP
 	mov RBX, 8
 	mul RBX
 	mov	RBX, 5
@@ -56,36 +60,55 @@ Read:
 
 True:
 	mov	R10, RAX
+	jmp Return
 
 False:
 	add RAX, 1
 	mov	R10, RAX
 
-	cmp RBP, 0				; If eax=0, sys_read reached EOF on stdin --> to change
-	je Exit					; Jump If Equal (to 0, from compare) --> to change
+Return:
 	ret						; return
 
 Convert:
 	mov	RCX, 0				; Move 0 to the CL register for a counter
-	mov	R9, 0				 
+	mov	R8, 5				; Compare value for counter
 	xor RBX, RBX			; Reset the RBX register
 
 .loop:
 	mov	BL, byte [Buff+RCX]	; Get the first byte from the buff
 	ror	RBX, 8				; Rotato Potato -> plz change dude
 	inc	RCX					; Increment counter
-	cmp	RCX, 5				; Repeat 5 times to get 5 bytes so it can be divided by 5
+	cmp	RCX, R8				; Repeat 5 times to get 5 bytes so it can be divided by 5
 	jne	.loop
 
+	push RCX
+	mov RCX, 0
 	shr RBX, 24
-	xor	RCX, RCX
+.loop2:
+	add	R8, 5
 	mov	RAX, RBX
+
+	push RDX
+	mov	RDX, 0
+.shift:
+	cmp RDX, RCX
+	je .continue
+
+	inc RDX
+	shr RAX, 5
+	jmp .shift
+
+.continue:
+	pop RDX
 	and	RAX, 1Fh
 	mov	DL, byte [CTable+RAX]
 	mov byte [Str+R9], DL
-	inc	R9
+	inc RCX
+	inc R9
+	cmp RCX, 8
+	jne .loop2
 
-	; insert test if finished
+	pop RCX
 	cmp R10, R9
 	jne .loop
 	ret
