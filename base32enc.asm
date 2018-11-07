@@ -73,6 +73,9 @@ Convert:
 	mov	RCX, 0				; Move 0 to the CL register for a counter
 	mov	R8, 5				; Compare value for counter
 	xor RBX, RBX			; Reset the RBX register
+	cmp R8, RBP
+	jbe	.loop
+	mov R8, RBP
 
 .loop:
 	mov	BL, byte [Buff+RCX]	; Get the first byte from the buff
@@ -84,8 +87,8 @@ Convert:
 	push RCX
 	mov RCX, 0
 	shr RBX, 24
-.loop2:
 	add	R8, 5
+.loop2:
 	mov	RAX, RBX
 
 	push RDX
