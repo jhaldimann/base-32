@@ -7,10 +7,14 @@
 ; Data section
 section .data
 
-; Conversion table
-CTable:
-	db 41h, 42h, 43h, 44h, 45h, 46h, 47h, 48h, 49h, 4Ah, 4Bh, 4Ch, 4Dh, 4Eh, 4Fh, 50h
-	db 51h, 52h, 53h, 54h, 55h, 56h, 57h, 58h, 59h, 5Ah, 32h, 33h, 34h, 35h, 36h, 37h
+	; Conversion table
+	CTable:
+		db 41h, 42h, 43h, 44h, 45h, 46h, 47h, 48h, 49h, 4Ah, 4Bh, 4Ch, 4Dh, 4Eh, 4Fh, 50h
+		db 51h, 52h, 53h, 54h, 55h, 56h, 57h, 58h, 59h, 5Ah, 32h, 33h, 34h, 35h, 36h, 37h
+
+	; End of line
+	EOL: db 0Ah
+	EOLLEN: equ $-EOL
 
 ; BSS section
 section .bss
@@ -20,7 +24,7 @@ section .bss
 	Buff: resb BUFFLEN			; Text buffer itself
 
 	; String for output
-	STRLEN	equ 5
+	STRLEN	equ 8
 	Str: resb STRLEN
 
 ; Text section
@@ -30,11 +34,11 @@ global _start
 
 ; Procedures
 Print:
-	mov	RAX, 1				;
-	mov	RDI, 0				;
-	mov	RSI, Str			; Move memory address of Str location in RSI
+	mov	RAX, 4				;
+	mov	RBX, 1				;
+	mov	RCX, Str			; Move memory address of Str location in RSI
 	mov	RDX, STRLEN			; Move length to print in RDX
-	syscall
+	int 80h
 	ret
 
 Reverse:
@@ -62,14 +66,17 @@ _start:
 
 ReadBuff:
 	mov	RAX, 3				; Get input from user
-	mov	RDI, 0
+	mov	RBX, 0
 	mov	RCX, Buff			; Write memory address from buff
 	mov	RDX, BUFFLEN		; Length that should be read
 	int 80h					; Make kernel call
 
 	mov	RBP, RAX			; Save number of bytes read
 	cmp RBP, 0				; Check if there were no bytes read
-	je Exit				; Exit the program if nothing was read
+	je Exit					; Exit the program if nothing was read
+	
+	cmp RBP, 5				; 
+	ja Exit
 
 	cmp RBP, 5				; Compare if 5 bytes were read
 	je	Convert5			; Jump to Convert5 if 5 bytes were read
@@ -78,22 +85,24 @@ ReadBuff:
 ; Converts groups of 5 bytes
 Convert5:
 	xor	RCX, RCX			; Reset RCX register to use it as counter
+	xor	RAX, RAX			; Reset RAX register
 
 ; Shift left and not rotate
 .loop5:
-	mov AL, byte [Buff+RCX]	; Copy the byte according to the counter in AL
 	shl	RAX, 8				; Shift left by 1 byte
+	mov AL, byte [Buff+RCX]	; Copy the byte according to the counter in AL
 	inc	RCX					; increment counter
 	cmp	RCX, 5				; Check if 5th byte was copied
 	jne .loop5				; Repeat the loop if 5th byte has not been read
 
 	xor	RDX, RDX			; Reset RDX register
 	xor	R10, R10			; Reset R10 register to use it as counter
+	shl	RAX, 24				; Shift left RAX by 3 bytes
 
 .mask5:
 	mov	RBX, RAX			; Copy RAX into RBX
 	shl RAX, 5				; Shift left RAX to get the next 5 bits the next time
-	shr RBX, 35
+	shr RBX, 59
 	mov	DL, byte[CTable+RBX]; Get the according symbol from conversion table
 	mov byte[Str+R10], DL	; Move the converted symbol from DL to the Str memory address + R10
 	inc R10					; increment R10 counter (counts to 8)
@@ -121,21 +130,24 @@ Convert:
 	add	RDX, 1				; add 1 to this number
 
 	xor	RCX, RCX			; Reset RCX to use as counter
+	xor RAX, RAX			; Reset the RAX register
 
 .loop:
-	mov AL, byte [Buff+RCX]	; Copy the byte according to the counter in AL
 	shl	RAX, 8				; Rotate right by 1 byte
+	mov AL, byte [Buff+RCX]	; Copy the byte according to the counter in AL
 	inc	RCX					; increment counter
 	cmp	RCX, 5				; Check if 5th byte was copied
 	jne .loop				; Repeat the loop if 5th byte has not been read
-	xor	RCX, RDX			; Set the RDX register to the number of times we can convert 5 bits
+
+	mov	RCX, RDX			; Set the RCX register to the number of times we can convert 5 bits
 	xor	RDX, RDX			; Reset RDX register
 	xor R10, R10			; Reset R10 to use as counter
+	shl	RAX, 24				; Shift left RAX by 3 bytes
 
 .mask:
 	mov	RBX, RAX			; Copy RAX into RBX
-	shr RAX, 5				; Shift right RAX to get the next 5 bits the next time
-	shr RBX, 35
+	shl RAX, 5				; Shift right RAX to get the next 5 bits the next time
+	shr RBX, 59				
 	mov	DL, byte[CTable+RBX]; Get the according symbol from conversion table
 	mov byte[Str+R10], DL	; Move the converted symbol from DL to the Str memory address + R10
 	dec RCX
@@ -197,6 +209,13 @@ equal1:
 	jmp Exit
 
 Exit:
+	; Print end of line at the end
+	mov	RAX, 1				;
+	mov	RDI, 1				;
+	mov	RSI, EOL			; Move memory address of Str location in RSI
+	mov	RDX, EOLLEN			; Move length to print in RDX
+	syscall
+
 	mov	RAX, 60				; Clean exit of the program
 	mov	RDI, 0
 	syscall
