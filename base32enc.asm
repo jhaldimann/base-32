@@ -37,6 +37,24 @@ Print:
 	syscall
 	ret
 
+Reverse:
+	push RAX				; Push value of RBX to stack
+	push RCX				; Push value of RCX to stack
+
+	mov RCX, 16
+
+.rloop:
+	rcr	BX, 1
+	rcl	AX, 1
+	loop .rloop
+
+	mov BX, AX
+	shr BX, 11
+
+	pop RCX
+	pop RAX
+	ret
+
 ; Start of the program
 _start:
 	; for testing
@@ -61,21 +79,21 @@ ReadBuff:
 Convert5:
 	xor	RCX, RCX			; Reset RCX register to use it as counter
 
+; Shift left and not rotate
 .loop5:
 	mov AL, byte [Buff+RCX]	; Copy the byte according to the counter in AL
-	ror	RAX, 8				; Rotate right by 1 byte
+	shl	RAX, 8				; Shift left by 1 byte
 	inc	RCX					; increment counter
 	cmp	RCX, 5				; Check if 5th byte was copied
 	jne .loop5				; Repeat the loop if 5th byte has not been read
 
-	shr	RAX, 24				; Shift right by 3 bytes
 	xor	RDX, RDX			; Reset RDX register
 	xor	R10, R10			; Reset R10 register to use it as counter
 
 .mask5:
 	mov	RBX, RAX			; Copy RAX into RBX
-	shr RAX, 5				; Shift right RAX to get the next 5 bits the next time
-	and RBX, 1Fh			; Mask last 5 bits
+	shl RAX, 5				; Shift left RAX to get the next 5 bits the next time
+	shr RBX, 35
 	mov	DL, byte[CTable+RBX]; Get the according symbol from conversion table
 	mov byte[Str+R10], DL	; Move the converted symbol from DL to the Str memory address + R10
 	inc R10					; increment R10 counter (counts to 8)
@@ -106,12 +124,10 @@ Convert:
 
 .loop:
 	mov AL, byte [Buff+RCX]	; Copy the byte according to the counter in AL
-	ror	RAX, 8				; Rotate right by 1 byte
+	shl	RAX, 8				; Rotate right by 1 byte
 	inc	RCX					; increment counter
 	cmp	RCX, 5				; Check if 5th byte was copied
 	jne .loop				; Repeat the loop if 5th byte has not been read
-
-	shr	RAX, 24				; Shift right by 3 bytes
 	xor	RCX, RDX			; Set the RDX register to the number of times we can convert 5 bits
 	xor	RDX, RDX			; Reset RDX register
 	xor R10, R10			; Reset R10 to use as counter
@@ -119,7 +135,7 @@ Convert:
 .mask:
 	mov	RBX, RAX			; Copy RAX into RBX
 	shr RAX, 5				; Shift right RAX to get the next 5 bits the next time
-	and RBX, 1Fh			; Mask last 5 bits
+	shr RBX, 35
 	mov	DL, byte[CTable+RBX]; Get the according symbol from conversion table
 	mov byte[Str+R10], DL	; Move the converted symbol from DL to the Str memory address + R10
 	dec RCX
