@@ -7,7 +7,7 @@
 ; Data section
 section .data
 
-	; Conversion table
+	; Encode table
 	EncTable:
 		db 41h, 42h, 43h, 44h, 45h, 46h, 47h, 48h, 49h, 4Ah, 4Bh, 4Ch, 4Dh, 4Eh, 4Fh, 50h
 		db 51h, 52h, 53h, 54h, 55h, 56h, 57h, 58h, 59h, 5Ah, 32h, 33h, 34h, 35h, 36h, 37h
@@ -151,7 +151,7 @@ Encode:
 	mov	RBX, RAX			; Copy RAX into RBX
 	shl RAX, 5				; Shift right RAX to get the next 5 bits the next time
 	shr RBX, 59				
-	mov	DL, byte[CTable+RBX]; Get the according symbol from conversion table
+	mov	DL, byte[EncTable+RBX]; Get the according symbol from conversion table
 	mov byte[Str+R10], DL	; Move the converted symbol from DL to the Str memory address + R10
 	dec RCX
 	inc R10
