@@ -41,6 +41,27 @@ Print:
 	int 80h
 	ret
 
+ResetBuffAndStr:
+	push RAX
+	push RCX
+
+	; Reset Str address
+	xor RAX, RAX
+	mov [Str], RAX
+
+	; Reset the Buff
+	xor RCX, RCX
+.reset:
+	mov byte [Buff+RCX], AL
+	inc RCX
+	cmp RCX, 5
+	jne .reset
+
+	pop RCX
+	pop RAX
+	ret
+
+
 Reverse:
 	push RAX				; Push value of RBX to stack
 	push RCX				; Push value of RCX to stack
@@ -61,10 +82,11 @@ Reverse:
 
 ; Start of the program
 _start:
-	; for testing
-	mov	RAX, Str
 
 ReadBuff:
+	; Reset buff and str for the next input
+	call ResetBuffAndStr
+
 	mov	RAX, 3				; Get input from user
 	mov	RBX, 0
 	mov	RCX, Buff			; Write memory address from buff
@@ -133,7 +155,7 @@ Convert:
 	xor RAX, RAX			; Reset the RAX register
 
 .loop:
-	shl	RAX, 8				; Rotate right by 1 byte
+	shl	RAX, 8				; Shift left by 1 byte
 	mov AL, byte [Buff+RCX]	; Copy the byte according to the counter in AL
 	inc	RCX					; increment counter
 	cmp	RCX, 5				; Check if 5th byte was copied
