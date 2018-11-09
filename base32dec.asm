@@ -86,23 +86,50 @@ Decode8:
 	inc RCX					; Increment counter
 
 	cmp RCX, 8				; Check if 8 bytes have been read from Buffer
-	jne .looop8				; Repeat the loop if not
+	jne .loop8				; Repeat the loop if not
 
+	push RCX				; Push counter on stack
+	xor RCX, RCX			; Reset counter
 .mask8:
 	mov RBX, RAX			; Copy the RAX register into RBX
 	shl	RAX, 8				; Shift left RAX by one byte to get the next 8 bits next iteration
 	shr	RBX, 56				; Shift right RBX by 7 bytes to mask out the most significant byte
 
-	cmp AL, 40h
+	cmp BL, 40h
 	jb .number
 	jmp .letter
 
 .letter:
+	or DL, byte [DecTable+RAX-41h] ; Move the value into DL accoring to the decoding table
+	shl RDX, 5				; Shift left RDX by 5 bits
+	inc RCX
 
-	
+	cmp RCX, 8
+	jne .letter
+	xor RCX, RCX
+	jmp .memory
 
+.number:
+	or DL, byte [DecTable+RAX-06h] ; Move the value into DL accoring to the decoding table
+	ror RDX, 5				; Rotate right RDX by 5 bits
+	inc RCX
 
+	cmp RCX, 8
+	jne .number
+	xor RCX, RCX
+	jmp .memory
 
+.memory:
+	mov byte [Str+RCX], DL
+	shr RDX, 8
+	inc RCX
+
+	cmp RCX, 5
+	jne .memory
+
+	call Print
+
+	jmp ReadBuff
 
 Exit:
 	mov	RAX, 60				; Clean exit of program
