@@ -61,27 +61,10 @@ ResetBuffAndStr:
 	pop RAX
 	ret
 
-
-Reverse:
-	push RAX				; Push value of RBX to stack
-	push RCX				; Push value of RCX to stack
-
-	mov RCX, 16
-
-.rloop:
-	rcr	BX, 1
-	rcl	AX, 1
-	loop .rloop
-
-	mov BX, AX
-	shr BX, 11
-
-	pop RCX
-	pop RAX
-	ret
-
 ; Start of the program
 _start:
+	; Counter for end of line
+	xor R11, R11
 
 ReadBuff:
 	; Reset buff and str for the next input
