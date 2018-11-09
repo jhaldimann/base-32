@@ -1,0 +1,6 @@
+*.delta
+*.out
+*.o
+*.want
+b32e
+b32d

@@ -1,1 +1,5 @@
+<<<<<<< HEAD
 ABCD
+=======
+fopasdfjasdopfnsdafoasdnfopasdfinasodfinasdofindff
+>>>>>>> 899a2bb5e8845d46abf150d0e5f06641c97bfe86
