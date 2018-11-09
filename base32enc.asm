@@ -8,7 +8,7 @@
 section .data
 
 	; Conversion table
-	CTable:
+	EncTable:
 		db 41h, 42h, 43h, 44h, 45h, 46h, 47h, 48h, 49h, 4Ah, 4Bh, 4Ch, 4Dh, 4Eh, 4Fh, 50h
 		db 51h, 52h, 53h, 54h, 55h, 56h, 57h, 58h, 59h, 5Ah, 32h, 33h, 34h, 35h, 36h, 37h
 
@@ -63,8 +63,6 @@ ResetBuffAndStr:
 
 ; Start of the program
 _start:
-	; Counter for end of line
-	xor R11, R11
 
 ReadBuff:
 	; Reset buff and str for the next input
@@ -84,11 +82,11 @@ ReadBuff:
 	ja Exit
 
 	cmp RBP, 5				; Compare if 5 bytes were read
-	je	Convert5			; Jump to Convert5 if 5 bytes were read
-	jmp Convert				; Jump to Convert if less than 5 bytes were read
+	je	Encode5			; Jump to Convert5 if 5 bytes were read
+	jmp Encode				; Jump to Convert if less than 5 bytes were read
 
 ; Converts groups of 5 bytes
-Convert5:
+Encode5:
 	xor	RCX, RCX			; Reset RCX register to use it as counter
 	xor	RAX, RAX			; Reset RAX register
 
@@ -108,7 +106,7 @@ Convert5:
 	mov	RBX, RAX			; Copy RAX into RBX
 	shl RAX, 5				; Shift left RAX to get the next 5 bits the next time
 	shr RBX, 59
-	mov	DL, byte[CTable+RBX]; Get the according symbol from conversion table
+	mov	DL, byte[EncTable+RBX]; Get the according symbol from conversion table
 	mov byte[Str+R10], DL	; Move the converted symbol from DL to the Str memory address + R10
 	inc R10					; increment R10 counter (counts to 8)
 
@@ -120,7 +118,7 @@ Convert5:
 	jmp ReadBuff			; Jump to ReadBuff to read the next bytes
 
 ; Converts groups of less than 5 bytes
-Convert:
+Encode:
 	; Get the number of bits to add
 	mov	RAX, RBP			; Copy the number of bytes read in RAX
 	mov	RBX, 8				; Move the multyplier 8 to RBX
