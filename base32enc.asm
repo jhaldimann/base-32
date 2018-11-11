@@ -34,32 +34,32 @@ global _start
 
 ; Procedures
 Print:
-	mov	RAX, 4				;
-	mov	RBX, 1				;
+	mov	RAX, 4				; Set mode to output (4 not 1)
+	mov	RBX, 1				; Set mode to output
 	mov	RCX, Str			; Move memory address of Str location in RSI
 	mov	RDX, STRLEN			; Move length to print in RDX
 	int 80h
 	ret
 
 ResetBuffAndStr:
-	push RAX
-	push RCX
+	push RAX				; Push data from stack to RAX
+	push RCX				; Push data from stack to RCX
 
 	; Reset Str address
-	xor RAX, RAX
-	mov [Str], RAX
+	xor RAX, RAX			; Reset data from RAX
+	mov [Str], RAX			
 
 	; Reset the Buff
-	xor RCX, RCX
+	xor RCX, RCX			; Reset data from RCX
 .reset:
 	mov byte [Buff+RCX], AL
-	inc RCX
+	inc RCX					; Increase counter
 	cmp RCX, 5
-	jne .reset
+	jne .reset				; Jump to reset label if not equal
 
-	pop RCX
-	pop RAX
-	ret
+	pop RCX					; Add data from stack to RCX
+	pop RAX					; Add data from stack to RAX
+	ret						; Return call
 
 ; Start of the program
 _start:
@@ -69,7 +69,7 @@ ReadBuff:
 	call ResetBuffAndStr
 
 	mov	RAX, 3				; Get input from user
-	mov	RBX, 0
+	mov	RBX, 0				; Get input from user
 	mov	RCX, Buff			; Write memory address from buff
 	mov	RDX, BUFFLEN		; Length that should be read
 	int 80h					; Make kernel call
@@ -78,11 +78,11 @@ ReadBuff:
 	cmp RBP, 0				; Check if there were no bytes read
 	je Exit					; Exit the program if nothing was read
 	
-	cmp RBP, 5				; 
-	ja Exit
+	cmp RBP, 5				; Check if RBP is 5
+	ja Exit					; If flag is above jump to Exit
 
 	cmp RBP, 5				; Compare if 5 bytes were read
-	je	Encode5			; Jump to Convert5 if 5 bytes were read
+	je	Encode5				; Jump to Convert5 if 5 bytes were read
 	jmp Encode				; Jump to Convert if less than 5 bytes were read
 
 ; Converts groups of 5 bytes
@@ -150,66 +150,66 @@ Encode:
 .mask:
 	mov	RBX, RAX			; Copy RAX into RBX
 	shl RAX, 5				; Shift right RAX to get the next 5 bits the next time
-	shr RBX, 59				
+	shr RBX, 59				; TO BE DONE
 	mov	DL, byte[EncTable+RBX]; Get the according symbol from conversion table
 	mov byte[Str+R10], DL	; Move the converted symbol from DL to the Str memory address + R10
-	dec RCX
-	inc R10
+	dec RCX					; Decrease RCX
+	inc R10					; Increase R10
 
 	cmp RCX, 0				; Check if loop has been the number of times we can convert 5 bits
 	jne .mask				; Repeat the loop if not
 
 	pop RBX					; Tell the number of bits added to RBX
 
-	xor RCX, RCX
+	xor RCX, RCX			; Reset RCX
 
-	cmp	RBX, 2
-	jmp equal6
+	cmp	RBX, 2				; Check if RBX is 2
+	jmp equal6				; Jump to equal6 if RBX is 2
 
-	cmp RBX, 4
-	jmp equal4
+	cmp RBX, 4				; Check if RBX is 4
+	jmp equal4				; Jump to equal4 if RBX is 4 
 
-	cmp RBX, 1
-	jmp equal3
+	cmp RBX, 1				; Check if RBX is 1
+	jmp equal3				; Jump to equal3 if RBX is 1
 
-	cmp RBX, 3
-	jmp equal1
+	cmp RBX, 3				; Check if RBX is 3
+	jmp equal1				; Jump to equal1 if RBX is 3
 
 equal6:
-	mov byte[Str+R10], 3Dh
-	inc R10
-	inc RCX
-	cmp RCX, 6
-	jne equal6
-	call Print
-	jmp Exit
+	mov byte[Str+R10], 3Dh	; TO BE DONE
+	inc R10					; Increase R10
+	inc RCX					; Increase RCX
+	cmp RCX, 6				; Check if RCX is 6
+	jne equal6				; If not jump to equal6
+	call Print				; Call Print function
+	jmp Exit				; Jump to exit label
 
 equal4:
-	mov byte[Str+R10], 3Dh
-	inc R10
-	inc RCX
-	cmp RCX, 4
-	jne equal4
-	call Print
-	jmp Exit
+	mov byte[Str+R10], 3Dh	; TO BE DONE
+	inc R10					; Increase R10
+	inc RCX					; Increase RCX
+	cmp RCX, 4				; Check if RCX is 4
+	jne equal4				; If not jump to equal4
+	call Print				; Call Print function
+	jmp Exit				; Jump to exit label
 
 equal3:
-	mov byte[Str+R10], 3Dh
-	inc R10
-	inc RCX
-	cmp RCX, 3
-	jne equal3
-	call Print
-	jmp Exit
+	mov byte[Str+R10], 3Dh	; TO BE DONE
+	inc R10					; Increase R10
+	inc RCX					; Increase RCX
+	cmp RCX, 3				; Check if RCX is 3
+	jne equal3				; If not jump to equal3
+	call Print				; Call Print function
+	jmp Exit				; Jump to exit label
 
 equal1:
-	mov byte[Str+R10], 3Dh
-	inc R10
-	inc RCX
-	cmp RCX, 1
-	jne equal1
-	call Print
-	jmp Exit
+	mov byte[Str+R10], 3Dh	; TO BE DONE
+	inc R10					; Increase R10
+	inc RCX					; Increase RCX
+	cmp RCX, 1				; Check if RCX is 1
+	jne equal1				; If not jump to equal 1
+	call Print				; Call Print function
+	jmp Exit				; Jump to exit label
 
 Exit:
 	; Print end of line at the end
@@ -220,5 +220,5 @@ Exit:
 	syscall
 
 	mov	RAX, 60				; Clean exit of the program
-	mov	RDI, 0
-	syscall
+	mov	RDI, 0				; Clean exit of the progeam
+	syscall					; Make system call
