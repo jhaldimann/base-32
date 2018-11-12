@@ -1,8 +1,8 @@
-; Name		: base32enc
-; Authors	: Haldimann Julian, Gasser Manuel
-; Created	: 05/11/2018
-; Last updated	: 05/11/2018
-; Description	: Small assembly program to encode data with base32
+; Name			: base32enc
+; Authors		: Haldimann Julian, Gasser Manuel
+; Created		: 05/11/2018
+; Last updated	: 12/11/2018
+; Description	: Small assembly program to encode data to base32
 
 ; Data section
 section .data
