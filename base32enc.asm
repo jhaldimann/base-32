@@ -34,10 +34,40 @@ global _start
 
 ; Procedures
 Print:
-	mov	RAX, 4				; Set mode to output (4 not 1)
-	mov	RBX, 1				; Set mode to output
+	inc R11					; increment number of times 
+
+	cmp	R11, 10				; Check if 72 Characters have been printed
+	je .printEOL10
+
+	cmp R11, 19
+	je .printEOL19			; Check if 152 Characters have been printed
+
+	mov	RAX, 4				;
+	mov	RBX, 1				;
 	mov	RCX, Str			; Move memory address of Str location in RSI
 	mov	RDX, STRLEN			; Move length to print in RDX
+	int 80h
+	ret
+
+.printEOL10:
+	shl dword[Str+3], 8
+	mov byte[Str+3], 0Ah
+
+	mov RAX, 4
+	mov RBX, 1
+	mov RCX, Str
+	mov RDX, 9
+	int 80h
+	ret
+
+.printEOL19:
+	mov byte[Str+8], 0Ah
+	xor R11, R11			; Reset counter
+
+	mov RAX, 4
+	mov RBX, 1
+	mov RCX, Str
+	mov RDX, 9
 	int 80h
 	ret
 
@@ -63,6 +93,7 @@ ResetBuffAndStr:
 
 ; Start of the program
 _start:
+	xor R11, R11
 
 ReadBuff:
 	; Reset buff and str for the next input
