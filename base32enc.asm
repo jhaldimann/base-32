@@ -34,40 +34,10 @@ global _start
 
 ; Procedures
 Print:
-	inc R11					; increment number of times 
-
-	cmp	R11, 10				; Check if 72 Characters have been printed
-	je .printEOL10
-
-	cmp R11, 19
-	je .printEOL19			; Check if 152 Characters have been printed
-
 	mov	RAX, 4				;
 	mov	RBX, 1				;
 	mov	RCX, Str			; Move memory address of Str location in RSI
-	mov	RDX, STRLEN			; Move length to print in RDX
-	int 80h
-	ret
-
-.printEOL10:
-	shl dword[Str+3], 8
-	mov byte[Str+3], 0Ah
-
-	mov RAX, 4
-	mov RBX, 1
-	mov RCX, Str
-	mov RDX, 9
-	int 80h
-	ret
-
-.printEOL19:
-	mov byte[Str+8], 0Ah
-	xor R11, R11			; Reset counter
-
-	mov RAX, 4
-	mov RBX, 1
-	mov RCX, Str
-	mov RDX, 9
+	mov	RDX, R12			; Move length to print in RDX
 	int 80h
 	ret
 
@@ -133,7 +103,19 @@ Encode5:
 	xor	R10, R10			; Reset R10 register to use it as counter
 	shl	RAX, 24				; Shift left RAX by 3 bytes
 
+	mov R12, STRLEN
 .mask5:
+	inc R11
+	cmp R11, 76
+	jne .continue5
+
+	mov byte[Str+R10], 0Ah
+	inc R10
+	mov R12, 9
+
+	xor R11, R11
+
+.continue5:
 	mov	RBX, RAX			; Copy RAX into RBX
 	shl RAX, 5				; Shift left RAX to get the next 5 bits the next time
 	shr RBX, 59
@@ -141,7 +123,7 @@ Encode5:
 	mov byte[Str+R10], DL	; Move the converted symbol from DL to the Str memory address + R10
 	inc R10					; increment R10 counter (counts to 8)
 
-	cmp R10, 8				; Check if loop has been done 8 times
+	cmp R10, R12				; Check if loop has been done 8 times
 	jne .mask5				; Repeat the loop if not done 8 times
 
 	call Print				; call Print procedure to print the converted symbols
@@ -156,7 +138,7 @@ Encode:
 	mul	RBX					; Multiply the number of bytes read by 8 to get the number of bits
 	mov	RBX, 5				; Move the divisor 5 to RBX
 	div	RBX					; Divide the number of bits read by 5
-	mov RBX, 5				; Move number of bits necessary for conversion to RBX
+	mov RBX, 5				; Move number of bits necessary for conversion to RBX 
 	sub	RBX, RDX			; Subtract the rest of the division from 5 to get the number of bits needed to add
 	push RBX				; Push the number of bits to add on the stack
 
@@ -178,7 +160,19 @@ Encode:
 	xor R10, R10			; Reset R10 to use as counter
 	shl	RAX, 24				; Shift left RAX by 3 bytes
 
+	mov R12, STRLEN
 .mask:
+	inc R11
+	cmp R11, 76
+	jne .continue
+
+	mov byte[Str+R10], 0Ah
+	inc R10
+	mov R12, 9
+
+	xor R11, R11
+
+.continue:
 	mov	RBX, RAX			; Copy RAX into RBX
 	shl RAX, 5				; Shift right RAX to get the next 5 bits the next time
 	shr RBX, 59				; TO BE DONE
