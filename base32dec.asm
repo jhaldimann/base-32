@@ -1,7 +1,7 @@
 ; Name		: base32dec
 ; Authors	: Haldimann Julian, Gasser Manuel
 ; Created	: 05/11/2018
-; Last updated	: 05/11/2018
+; Last updated	: 15/11/2018
 ; Description	: Small assembly program to decode data with base32
 
 ; Data section
@@ -30,12 +30,36 @@ global _start
 
 ; Procedures
 Print:
+	inc R10					; increment number of times 
+
+	cmp	R10, 10				; Check if 72 Characters have been printed
+	je .printEOL10
+
+	cmp R10, 19
+	je .printEOL19			; Check if 152 Characters have been printed
+
 	mov	RAX, 4				;
 	mov	RBX, 1				;
 	mov	RCX, Str			; Move memory address of Str location in RSI
 	mov	RDX, STRLEN			; Move length to print in RDX
 	int 80h
 	ret
+
+.printEOL10:
+	shl dword[Str+4], 8
+	mov byte[Str+4], 0Ah
+
+	mov RAX, 4
+	mov RBX, 1
+	mov RCX, Str
+	mov RDX, 9
+	int 80h
+	ret
+
+.printEOL19:
+
+
+
 
 ResetBuffAndStr:
 	push RAX
@@ -61,6 +85,9 @@ ResetBuffAndStr:
 _start:
 
 ReadBuff:
+
+	xor R10, R10			; Reset R10 to use as counter
+
 	; Reset buff and str for the next input
 	call ResetBuffAndStr
 
@@ -96,36 +123,39 @@ Decode8:
 	shr	RBX, 56				; Shift right RBX by 7 bytes to mask out the most significant byte
 
 	cmp BL, 40h
-	jb .number
-	jmp .letter
+	jb number
+	jmp letter
 
-.letter:
+Decode:
+
+
+letter:
 	or DL, byte [DecTable+RAX-41h] ; Move the value into DL accoring to the decoding table
 	shl RDX, 5				; Shift left RDX by 5 bits
 	inc RCX
 
 	cmp RCX, 8
-	jne .letter
+	jne letter
 	xor RCX, RCX
-	jmp .memory
+	jmp memory
 
-.number:
+number:
 	or DL, byte [DecTable+RAX-06h] ; Move the value into DL accoring to the decoding table
 	ror RDX, 5				; Rotate right RDX by 5 bits
 	inc RCX
 
 	cmp RCX, 8
-	jne .number
+	jne number
 	xor RCX, RCX
-	jmp .memory
+	jmp memory
 
-.memory:
+memory:
 	mov byte [Str+RCX], DL
 	shr RDX, 8
 	inc RCX
 
 	cmp RCX, 5
-	jne .memory
+	jne memory
 
 	call Print
 

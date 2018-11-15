@@ -1,7 +1,7 @@
 ; Name			: base32enc
 ; Authors		: Haldimann Julian, Gasser Manuel
 ; Created		: 05/11/2018
-; Last updated	: 12/11/2018
+; Last updated	: 15/11/2018
 ; Description	: Small assembly program to encode data to base32
 
 ; Data section
@@ -38,7 +38,9 @@ Print:
 	mov	RBX, 1				;
 	mov	RCX, Str			; Move memory address of Str location in RSI
 	mov	RDX, R12			; Move length to print in RDX
+	push R9
 	int 80h
+	pop R9
 	ret
 
 ResetBuffAndStr:
@@ -63,7 +65,7 @@ ResetBuffAndStr:
 
 ; Start of the program
 _start:
-	xor R11, R11
+	xor R9, R9
 
 ReadBuff:
 	; Reset buff and str for the next input
@@ -73,7 +75,9 @@ ReadBuff:
 	mov	RBX, 0				; Get input from user
 	mov	RCX, Buff			; Write memory address from buff
 	mov	RDX, BUFFLEN		; Length that should be read
+	push R9
 	int 80h					; Make kernel call
+	pop R9
 
 	mov	RBP, RAX			; Save number of bytes read
 	cmp RBP, 0				; Check if there were no bytes read
@@ -105,17 +109,17 @@ Encode5:
 
 	mov R12, STRLEN
 .mask5:
-	inc R11
-	cmp R11, 76
+	cmp R9, 76
 	jne .continue5
 
 	mov byte[Str+R10], 0Ah
 	inc R10
 	mov R12, 9
 
-	xor R11, R11
+	xor R9, R9
 
 .continue5:
+	inc R9
 	mov	RBX, RAX			; Copy RAX into RBX
 	shl RAX, 5				; Shift left RAX to get the next 5 bits the next time
 	shr RBX, 59
@@ -238,11 +242,11 @@ equal1:
 
 Exit:
 	; Print end of line at the end
-	mov	RAX, 1				;
-	mov	RDI, 1				;
-	mov	RSI, EOL			; Move memory address of Str location in RSI
+	mov	RAX, 4				;
+	mov	RBX, 1				;
+	mov	RCX, EOL			; Move memory address of Str location in RSI
 	mov	RDX, EOLLEN			; Move length to print in RDX
-	syscall
+	int 80h
 
 	mov	RAX, 60				; Clean exit of the program
 	mov	RDI, 0				; Clean exit of the progeam

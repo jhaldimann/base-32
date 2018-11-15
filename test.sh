@@ -20,7 +20,7 @@ for n in A AA AB bc D13 FOO foxy lalalalalal4242
 do
   points=1
   timeout -s SIGKILL 1s echo -n $n | ./b32e > $n.out || { echo "Your 'b32' command failed to run: $?" ; points=0 ; }
-  echo -n $n | base32 -w 0 > $n.want || { echo "System 'base32' failed to run"; exit 1; }
+  echo -n $n | base32  > $n.want || { echo "System 'base32' failed to run"; exit 1; }
   diff -w $n.want $n.out > $n.delta || { echo "Encode failed on $n" ; points=0; }
   if test $points = 1
   then
@@ -34,7 +34,7 @@ done
 # Then we compare with the result produced by system 'base32'
 points=1
 timeout -s SIGKILL 1s cat base32enc.asm | ./b32e > text.out || { echo "Your 'b32' command failed to run: $?" ; points=0 ; }
-cat base32enc.asm | base32 -w 0 > text.want || { echo "System 'base32' failed to run"; exit 1; }
+cat base32enc.asm | base32  > text.want || { echo "System 'base32' failed to run"; exit 1; }
 diff -w text.want text.out > text.delta || { echo "Encode text file failed" ; points=0; }
 if test $points = 1
 then
@@ -47,7 +47,7 @@ fi
 # Then we compare with the result produced by system 'base32'
 points=1
 timeout -s SIGKILL 1s cat b32e | ./b32e > binary.out || { echo "Your 'b32' command failed to run: $?" ; points=0 ; }
-cat b32e | base32 -w 0 > binary.want || { echo "System 'base32' failed to run"; exit 1; }
+cat b32e | base32  > binary.want || { echo "System 'base32' failed to run"; exit 1; }
 diff -w binary.want binary.out > binary.delta || { echo "Encode binary file failed" ; points=0; }
 if test $points = 1
 then
