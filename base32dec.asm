@@ -106,6 +106,7 @@ Decode8:
 	xor RCX, RCX			; Reset RCX register
 	xor RAX, RAX			; Reset RAX register
 	xor RBX, RBX			; Reset RBX register
+	xor RDX, RDX			; Reset RDX register
 	
 .loop8:
 	shl	RAX, 8				; Shift left by 1 byte
@@ -122,36 +123,45 @@ Decode8:
 	shl	RAX, 8				; Shift left RAX by one byte to get the next 8 bits next iteration
 	shr	RBX, 56				; Shift right RBX by 7 bytes to mask out the most significant byte
 
+	cmp BL, 0Ah				; Ignore EOL
+	je .mask8
+
 	cmp BL, 40h
-	jb number
-	jmp letter
+	jb .number8
+	jmp .letter8
+
+
+.letter8:
+	shl RDX, 5				; Shift left RDX by 5 bits
+	sub RBX, 41h			; Subtract the value of the first possible letter (41h = A) from RAX
+	or DL, BL				; Move the next 5 bits from AL to DL
+	inc RCX					; Increment counter
+
+	cmp RCX, 8				; Check if all  8 bytes have been converted to original value
+	jne .mask8				; If not repeat the loop
+	xor RCX, RCX			; Reset counter
+	shl RDX, 24
+	jmp memory				
+
+.number8:
+	shl RDX, 5				; Rotate right RDX by 5 bits
+	sub RBX, 18h
+	or DL, BL				; Move the value into DL accoring to the decoding table
+	inc RCX
+
+	cmp RCX, 8
+	jne .mask8
+	xor RCX, RCX
+	shl RDX, 24
+	jmp memory
+
+
 
 Decode:
 
-
-letter:
-	or DL, byte [DecTable+RAX-41h] ; Move the value into DL accoring to the decoding table
-	shl RDX, 5				; Shift left RDX by 5 bits
-	inc RCX
-
-	cmp RCX, 8
-	jne letter
-	xor RCX, RCX
-	jmp memory
-
-number:
-	or DL, byte [DecTable+RAX-06h] ; Move the value into DL accoring to the decoding table
-	ror RDX, 5				; Rotate right RDX by 5 bits
-	inc RCX
-
-	cmp RCX, 8
-	jne number
-	xor RCX, RCX
-	jmp memory
-
 memory:
+	rol RDX, 8
 	mov byte [Str+RCX], DL
-	shr RDX, 8
 	inc RCX
 
 	cmp RCX, 5
