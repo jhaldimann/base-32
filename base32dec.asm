@@ -176,8 +176,11 @@ Decode:
 	mov	RCX, Buff			; Write memory address from buff
 	mov	RDX, BUFFLEN		; Length that should be read
 	push R10
+	push R9
 	int 80h					; Make kernel call
+	pop R9
 	pop R10
+
 
 
 	xor RCX, RCX
@@ -209,6 +212,7 @@ Decode:
 	jmp .loopshift
 
 .todo:
+	xor RCX, RCX
 	cmp	RBX, 6				; Check if RBX is 6
 	jmp .zero2
 
@@ -254,7 +258,7 @@ Decode:
 	cmp BL, 0Ah				; Ignore EOL
 	je .mask
 
-	xor RCX, RCX
+
 	cmp BL, 40h
 	jb .number
 	jmp .letter
