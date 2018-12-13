@@ -15,13 +15,13 @@ section .data
 ; BSS section
 section .bss
 
-	; Buffer for input
-	BUFFLEN	equ 8				; We read the file 16 bytes at a time
-	Buff: resb BUFFLEN			; Text buffer itself
+; Buffer for input
+BUFFLEN	equ 8				; We read the file 16 bytes at a time
+Buff: resb BUFFLEN			; Text buffer itself
 
-	; String for output
-	STRLEN	equ 5
-	Str: resb STRLEN
+; String for output
+STRLEN	equ 5
+Str: resb STRLEN
 
 ; Text section
 section .text
@@ -30,36 +30,12 @@ global _start
 
 ; Procedures
 Print:
-	inc R10					; increment number of times 
-
-	cmp	R10, 10				; Check if 72 Characters have been printed
-	je .printEOL10
-
-	cmp R10, 19
-	je .printEOL19			; Check if 152 Characters have been printed
-
 	mov	RAX, 4				;
 	mov	RBX, 1				;
 	mov	RCX, Str			; Move memory address of Str location in RSI
 	mov	RDX, STRLEN			; Move length to print in RDX
 	int 80h
 	ret
-
-.printEOL10:
-	shl dword[Str+4], 8
-	mov byte[Str+4], 0Ah
-
-	mov RAX, 4
-	mov RBX, 1
-	mov RCX, Str
-	mov RDX, 9
-	int 80h
-	ret
-
-.printEOL19:
-
-
-
 
 ResetBuffAndStr:
 	push RAX
@@ -99,7 +75,27 @@ ReadBuff:
 
 	mov	RBP, RAX			; Save number of bytes read
 	cmp RBP, 0				; Check if there were no bytes read
-	je Exit					; Exit the program if nothing was read					; return
+	je Exit					; Exit the program if nothing was read
+	xor RCX, RCX			; Reset RCX to use it in loopEndChars
+	xor RBX, RBX
+	
+loopEndChars:
+	cmp RCX,8
+	je .if
+
+	mov AL, byte [Buff+RCX]
+	inc RCX
+	cmp AL, "="
+	jne loopEndChars
+
+.equal:
+	inc RBX
+	jmp loopEndChars
+
+.if:
+	cmp RBX, 0
+	ja Decode
+	jmp Decode8
 
 ; Decodes 8 symbols 
 Decode8:
@@ -130,7 +126,6 @@ Decode8:
 	jb .number8
 	jmp .letter8
 
-
 .letter8:
 	shl RDX, 5				; Shift left RDX by 5 bits
 	sub RBX, 41h			; Subtract the value of the first possible letter (41h = A) from RAX
@@ -155,9 +150,138 @@ Decode8:
 	shl RDX, 24
 	jmp memory
 
-
-
 Decode:
+	xor RAX, RAX
+	mov RDX, 8
+	sub RDX, RBX
+	mov R9, RDX
+	mov RCX, RDX
+	mov R10, 8
+	sub R10, RCX
+	xor RCX, RCX
+
+.loop:
+	shl RAX, 8
+	mov AL, byte[Buff+RCX]
+	inc RCX
+	cmp RDX,RCX
+	jne .loop
+
+.readbuffloop:
+	push RBX
+	push RAX
+	call ResetBuffAndStr
+	mov	RAX, 3				; Get input from user
+	mov	RBX, 0
+	mov	RCX, Buff			; Write memory address from buff
+	mov	RDX, BUFFLEN		; Length that should be read
+	push R10
+	int 80h					; Make kernel call
+	pop R10
+
+
+	xor RCX, RCX
+	pop RAX
+	pop RBX
+
+	cmp RAX,0
+	jne .loopshift
+
+
+.checkBuff:
+	cmp RCX,8
+	je .todo
+	inc RCX
+	mov DL, byte [Buff+RCX]
+	cmp DL, "="
+	jne .checkBuff
+
+.equal:
+	inc RBX
+	jmp .checkBuff
+
+
+.loopshift:
+	cmp R10,0
+	je .todo
+	dec R10
+	shl RAX, 8
+	jmp .loopshift
+
+.todo:
+	cmp	RBX, 6				; Check if RBX is 6
+	jmp .zero2
+
+	cmp RBX, 4				; Check if RBX is 4
+	jmp .zero4				; Jump to equal4 if RBX is 4 
+
+	cmp RBX, 3				; Check if RBX is 3
+	jmp .zero1				; Jump to equal3 if RBX is 1
+
+	cmp RBX, 1				; Check if RBX is 1
+	jmp .zero3				; Jump to equal1 if RBX is 3
+
+.zero1:
+	mov RBX, 1
+	push RBX
+	jmp .mask
+
+.zero2:
+	mov RBX, 2
+	push RBX
+	jmp .mask
+
+.zero3:
+	mov RBX, 3
+	push RBX
+	jmp .mask
+
+.zero4:
+	mov RBX, 4
+	push RBX
+	jmp .mask
+
+.zero6:
+	mov RBX, 6
+	push RBX
+	jmp .mask
+
+.mask:
+	mov RBX, RAX			; Copy the RAX register into RBX
+	shl	RAX, 8				; Shift left RAX by one byte to get the next 8 bits next iteration
+	shr	RBX, 56				; Shift right RBX by 7 bytes to mask out the most significant byte
+
+	cmp BL, 0Ah				; Ignore EOL
+	je .mask
+
+	xor RCX, RCX
+	cmp BL, 40h
+	jb .number
+	jmp .letter
+
+.letter:
+	shl RDX, 5				; Shift left RDX by 5 bits
+	sub RBX, 41h			; Subtract the value of the first possible letter (41h = A) from RAX
+	or DL, BL				; Move the next 5 bits from AL to DL
+	inc RCX					; Increment counter
+	cmp RCX, R9				; Check if all  8 bytes have been converted to original value
+	jne .mask				; If not repeat the loop
+	xor RCX, RCX			; Reset counter
+	shl RDX, 24
+	jmp memory				
+
+.number:
+	shl RDX, 5				; Rotate right RDX by 5 bits
+	sub RBX, 18h
+	or DL, BL				; Move the value into DL accoring to the decoding table
+	inc RCX
+
+	cmp RCX, R9
+	jne .mask
+	xor RCX, RCX
+	shl RDX, 24
+	jmp memory
+
 
 memory:
 	rol RDX, 8
