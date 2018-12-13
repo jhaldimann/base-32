@@ -33,7 +33,7 @@ Print:
 	mov	RAX, 4				;
 	mov	RBX, 1				;
 	mov	RCX, Str			; Move memory address of Str location in RSI
-	mov	RDX, STRLEN			; Move length to print in RDX
+	mov	RDX, R11			; Move length to print in RDX
 	int 80h
 	ret
 
@@ -136,6 +136,7 @@ Decode8:
 	jne .mask8				; If not repeat the loop
 	xor RCX, RCX			; Reset counter
 	shl RDX, 24
+	mov R11, STRLEN
 	jmp memory				
 
 .number8:
@@ -148,6 +149,7 @@ Decode8:
 	jne .mask8
 	xor RCX, RCX
 	shl RDX, 24
+	mov R11, STRLEN
 	jmp memory
 
 Decode:
@@ -167,63 +169,32 @@ Decode:
 	cmp RDX,RCX
 	jne .loop
 
-.readbuffloop:
-	push RBX
-	push RAX
-	call ResetBuffAndStr
-	mov	RAX, 3				; Get input from user
-	mov	RBX, 0
-	mov	RCX, Buff			; Write memory address from buff
-	mov	RDX, BUFFLEN		; Length that should be read
-	push R10
-	push R9
-	int 80h					; Make kernel call
-	pop R9
-	pop R10
-
-
-
 	xor RCX, RCX
-	pop RAX
-	pop RBX
+	xor RDX, RDX
 
 	cmp RAX,0
 	jne .loopshift
 
-
-.checkBuff:
-	cmp RCX,8
-	je .todo
-	inc RCX
-	mov DL, byte [Buff+RCX]
-	cmp DL, "="
-	jne .checkBuff
-
-.equal:
-	inc RBX
-	jmp .checkBuff
-
-
 .loopshift:
-	cmp R10,0
-	je .todo
 	dec R10
 	shl RAX, 8
+	cmp R10,0
+	je .todo
 	jmp .loopshift
 
 .todo:
 	xor RCX, RCX
 	cmp	RBX, 6				; Check if RBX is 6
-	jmp .zero2
+	je .zero2
 
 	cmp RBX, 4				; Check if RBX is 4
-	jmp .zero4				; Jump to equal4 if RBX is 4 
+	je .zero4				; Jump to equal4 if RBX is 4 
 
 	cmp RBX, 3				; Check if RBX is 3
-	jmp .zero1				; Jump to equal3 if RBX is 1
+	je .zero1				; Jump to equal3 if RBX is 1
 
 	cmp RBX, 1				; Check if RBX is 1
-	jmp .zero3				; Jump to equal1 if RBX is 3
+	je .zero3				; Jump to equal1 if RBX is 3
 
 .zero1:
 	mov RBX, 1
@@ -268,11 +239,11 @@ Decode:
 	sub RBX, 41h			; Subtract the value of the first possible letter (41h = A) from RAX
 	or DL, BL				; Move the next 5 bits from AL to DL
 	inc RCX					; Increment counter
-	cmp RCX, R9				; Check if all  8 bytes have been converted to original value
+	cmp RCX, R9				; Check if all bytes have been converted to original value
 	jne .mask				; If not repeat the loop
-	xor RCX, RCX			; Reset counter
-	shl RDX, 24
-	jmp memory				
+
+	pop RBX	
+	jmp .delZero
 
 .number:
 	shl RDX, 5				; Rotate right RDX by 5 bits
@@ -282,19 +253,36 @@ Decode:
 
 	cmp RCX, R9
 	jne .mask
+
+	pop RBX
+	jmp .delZero
+
+.delZero:
+	shr RDX, 1
+	dec RBX
+	cmp RBX, 0
+	jne .delZero	
+	xor RCX, RCX			; Reset counter		
+
+.roll:
+	ror RDX, 8
+	inc RCX
+	cmp DL, 0
+	jne .roll
+
+	mov R11, RCX
 	xor RCX, RCX
-	shl RDX, 24
-	jmp memory
-
-
 memory:
 	rol RDX, 8
+	cmp DL, 0
+	je .print
+
 	mov byte [Str+RCX], DL
 	inc RCX
-
 	cmp RCX, 5
 	jne memory
 
+.print:
 	call Print
 
 	jmp ReadBuff
