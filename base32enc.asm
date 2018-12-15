@@ -1,7 +1,7 @@
 ; Name			: base32enc
 ; Authors		: Haldimann Julian, Gasser Manuel
 ; Created		: 05/11/2018
-; Last updated	: 15/11/2018
+; Last updated	: 16/12/2018
 ; Description	: Small assembly program to encode data to base32
 
 ; Data section
@@ -13,6 +13,7 @@ section .data
 	; End of line
 	EOL: db 0Ah					; Define endofline const
 	EOLLEN: equ $-EOL			; Define endofline length
+
 ; BSS section
 section .bss
 	; Buffer for input
@@ -21,6 +22,7 @@ section .bss
 	; String for output
 	STRLEN	equ 8				; Define output length to 8
 	Str: resb STRLEN			; Reserve 8 bytes
+
 ; Text section
 section .text
 
@@ -28,8 +30,8 @@ global _start
 
 ; Procedures
 Print:
-	mov	RAX, 4					;
-	mov	RBX, 1					;
+	mov	RAX, 4					; Set mode to output
+	mov	RBX, 1					; Set mode to output
 	mov	RCX, Str				; Move memory address of Str location in RSI
 	mov	RDX, R12				; Move length to print in RDX
 	push R9						; Push R9 value to the stack to save
@@ -42,9 +44,10 @@ ResetBuffAndStr:
 	push RCX					; Push data from stack to RCX
 	; Reset Str address
 	xor RAX, RAX				; Reset data from RAX
-	mov [Str], RAX				; Move value of RAX to Str (string length)	 
+	mov [Str], RAX				; Move value of RAX to Str (string length) 
 	; Reset the Buff
 	xor RCX, RCX				; Reset data from RCX (buff)
+
 .reset:
 	mov byte [Buff+RCX], AL		
 	inc RCX						; Increase counter
@@ -60,7 +63,7 @@ _start:
 
 ReadBuff:
 	; Reset buff and str for the next input
-	call ResetBuffAndStr
+	call ResetBuffAndStr		; Call function ResetBuffAndStr
 	mov	RAX, 3					; Get input from user
 	mov	RBX, 0					; Get input from user
 	mov	RCX, Buff				; Write memory address from buff
@@ -86,7 +89,7 @@ Encode5:
 .loop5:
 	shl	RAX, 8					; Shift left by 1 byte
 	mov AL, byte [Buff+RCX]		; Copy the byte according to the counter in AL
-	inc	RCX						; increment counter
+	inc	RCX						; Increment counter
 	cmp	RCX, 5					; Check if 5th byte was copied
 	jne .loop5					; Repeat the loop if 5th byte has not been read
 	xor	RDX, RDX				; Reset RDX register
@@ -108,10 +111,10 @@ Encode5:
 	shr RBX, 59					; Shift right RBX by 4 bytes
 	mov	DL, byte[EncTable+RBX]	; Get the according symbol from conversion table
 	mov byte[Str+R10], DL		; Move the converted symbol from DL to the Str memory address + R10
-	inc R10						; increment R10 counter (counts to 8)
+	inc R10						; Increment R10 counter (counts to 8)
 	cmp R10, R12				; Check if loop has been done 8 times
 	jne .mask5					; Repeat the loop if not done 8 times
-	call Print					; call Print procedure to print the converted symbols
+	call Print					; Call Print procedure to print the converted symbols
 	jmp ReadBuff				; Jump to ReadBuff to read the next bytes
 
 ; Converts groups of less than 5 bytes
@@ -126,14 +129,14 @@ Encode:
 	sub	RBX, RDX				; Subtract the rest of the division from 5 to get the number of bits needed to add
 	push RBX					; Push the number of bits to add on the stack
 	mov	RDX, RAX				; Set the RDX register to the number of times we can convert 5 bits
-	add	RDX, 1					; add 1 to this number
+	add	RDX, 1					; Add 1 to this number
 	xor	RCX, RCX				; Reset RCX to use as counter
 	xor RAX, RAX				; Reset the RAX register
 
 .loop:
 	shl	RAX, 8					; Shift left by 1 byte
 	mov AL, byte [Buff+RCX]		; Copy the byte according to the counter in AL
-	inc	RCX						; increment counter
+	inc	RCX						; Increment counter by 1
 	cmp	RCX, 5					; Check if 5th byte was copied
 	jne .loop					; Repeat the loop if 5th byte has not been read
 	mov	RCX, RDX				; Set the RCX register to the number of times we can convert 5 bits
@@ -146,7 +149,7 @@ Encode:
 	inc R11						; Increase the R11 register by 1
 	cmp R11, 76					; Compare the R11 register with 76
 	jne .continue				; If its not equal go to the .continue label
-	mov byte[Str+R10], 0Ah
+	mov byte[Str+R10], 0Ah		; Add an EOF
 	inc R10						; Increase the R10 register by 1
 	mov R12, 9					; Move the value 9 to the R12 register
 	xor R11, R11				; Reset the R11 Register
@@ -173,7 +176,7 @@ Encode:
 	jmp equal1					; Jump to equal1 if RBX is 3
 
 equal6:
-	mov byte[Str+R10], 3Dh		; TO BE DONE
+	mov byte[Str+R10], 3Dh		; 
 	inc R10						; Increase R10
 	inc RCX						; Increase RCX
 	cmp RCX, 6					; Check if RCX is 6
@@ -182,7 +185,7 @@ equal6:
 	jmp Exit					; Jump to exit label
 
 equal4:
-	mov byte[Str+R10], 3Dh		; TO BE DONE
+	mov byte[Str+R10], 3Dh		; 
 	inc R10						; Increase R10
 	inc RCX						; Increase RCX
 	cmp RCX, 4					; Check if RCX is 4
@@ -191,7 +194,7 @@ equal4:
 	jmp Exit					; Jump to exit label
 
 equal3:
-	mov byte[Str+R10], 3Dh		; TO BE DONE
+	mov byte[Str+R10], 3Dh		; 
 	inc R10						; Increase R10
 	inc RCX						; Increase RCX
 	cmp RCX, 3					; Check if RCX is 3
@@ -200,7 +203,7 @@ equal3:
 	jmp Exit					; Jump to exit label
 
 equal1:
-	mov byte[Str+R10], 3Dh		; TO BE DONE
+	mov byte[Str+R10], 3Dh		; 
 	inc R10						; Increase R10
 	inc RCX						; Increase RCX
 	cmp RCX, 1					; Check if RCX is 1
@@ -214,7 +217,7 @@ Exit:
 	mov	RBX, 1					; Set mode to output
 	mov	RCX, EOL				; Move memory address of Str location in RSI
 	mov	RDX, EOLLEN				; Move length to print in RDX
-	int 80h
+	int 80h						; Make kernel call
 	mov	RAX, 60					; Clean exit of the program
 	mov	RDI, 0					; Clean exit of the progeam
 	syscall						; Make system call

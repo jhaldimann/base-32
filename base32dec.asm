@@ -1,7 +1,7 @@
-; Name		: base32dec
-; Authors	: Haldimann Julian, Gasser Manuel
-; Created	: 05/11/2018
-; Last updated	: 15/11/2018
+; Name			: base32dec
+; Authors		: Haldimann Julian, Gasser Manuel
+; Created		: 05/11/2018
+; Last updated	: 16/12/2018
 ; Description	: Small assembly program to decode data with base32
 
 ; Data section
@@ -30,49 +30,44 @@ global _start
 
 ; Procedures
 Print:
-	mov	RAX, 4				;
-	mov	RBX, 1				;
+	mov	RAX, 4				; Set mode to output
+	mov	RBX, 1				; Set mode to output
 	mov	RCX, Str			; Move memory address of Str location in RSI
 	mov	RDX, R11			; Move length to print in RDX
 	int 80h
 	ret
 
 ResetBuffAndStr:
-	push RAX
-	push RCX
+	push RAX				; Push value of RAX to the stack
+	push RCX				; Push value of RCX to the stack
 
 	; Reset Str address
-	xor RAX, RAX
-	mov [Buff], RAX
+	xor RAX, RAX			; Reset the RAX register
+	mov [Buff], RAX			; Move value of the RAX register to the Buff
 
 	; Reset the Buff
-	xor RCX, RCX
+	xor RCX, RCX			; Reset the RCX register
 .reset:
-	mov byte [Str+RCX], AL
-	inc RCX
-	cmp RCX, 5
-	jne .reset
+	mov byte [Str+RCX], AL	;
+	inc RCX					; Increase the value of RCX by 1
+	cmp RCX, 5				; Compare the RCX value with 5
+	jne .reset				; If RCX is not 5 jump to reset
 
-	pop RCX
-	pop RAX
+	pop RCX					; Add the first entry of the stack to the RCX register
+	pop RAX					; Add the second entry of the stack to the RAX register
 	ret
 
 ; Start of the program
 _start:
 
 ReadBuff:
-
 	xor R10, R10			; Reset R10 to use as counter
-
-	; Reset buff and str for the next input
-	call ResetBuffAndStr
-
+	call ResetBuffAndStr	; Reset buff and str for the next input
 	mov	RAX, 3				; Get input from user
 	mov	RBX, 0
 	mov	RCX, Buff			; Write memory address from buff
 	mov	RDX, BUFFLEN		; Length that should be read
 	int 80h					; Make kernel call
-
 	mov	RBP, RAX			; Save number of bytes read
 	cmp RBP, 0				; Check if there were no bytes read
 	je Exit					; Exit the program if nothing was read
