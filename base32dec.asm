@@ -37,6 +37,7 @@ Print:
 	int 80h
 	ret
 
+; Reset the Buffer
 ResetBuffAndStr:
 	push RAX				; Push value of RAX to the stack
 	push RCX				; Push value of RCX to the stack
@@ -47,6 +48,7 @@ ResetBuffAndStr:
 
 	; Reset the Buff
 	xor RCX, RCX			; Reset the RCX register
+
 .reset:
 	mov byte [Str+RCX], AL	;
 	inc RCX					; Increase the value of RCX by 1
@@ -60,6 +62,7 @@ ResetBuffAndStr:
 ; Start of the program
 _start:
 
+; Get the input of the user 
 ReadBuff:
 	xor R10, R10			; Reset R10 to use as counter
 	call ResetBuffAndStr	; Reset buff and str for the next input
@@ -73,11 +76,11 @@ ReadBuff:
 	je Exit					; Exit the program if nothing was read
 	xor RCX, RCX			; Reset RCX to use it in loopEndChars
 	xor RBX, RBX
-	
+
+; Check if there is a = in the input 	
 loopEndChars:
 	cmp RCX,8				; Check if the counter(RCX) equals to 8
 	je .if					; If counter is 8 jump to the if label
-
 	mov AL, byte [Buff+RCX]
 	inc RCX					; Incremenet the counter (RCX)
 	cmp AL, "="				; Check if the AL is an =
@@ -92,10 +95,11 @@ loopEndChars:
 	ja Decode				; If RBX is higher jump to Decode label 
 	jmp Decode8				; Jump to Decode8 function
 
+; Read one byte from the input and reset it at the start
 ReadOneByte:
 	call ResetBuffAndStr	; Reset buff and str for the next input
 	mov	RAX, 3				; Get input from user
-	mov	RBX, 0
+	mov	RBX, 0				; Set the RBX register to 0
 	mov	RCX, Buff			; Write memory address from buff
 	mov	RDX, 1				; Length that should be read
 	int 80h					; Make kernel call
@@ -118,15 +122,13 @@ Decode8:
 	shl	RAX, 8				; Shift left by 1 byte
 	mov AL, byte [Buff+RCX] ; Write the byte at the Buff address + counter in AL
 	inc RCX					; Increment counter
-
 	cmp RCX, 8				; Check if 8 bytes have been read from Buffer
 	jne .loop8				; Repeat the loop if not
-
 	push RCX				; Push counter on stack
 	xor RCX, RCX			; Reset counter
 	mov R11, 0				; Set R11 to 0
 
-
+; Mask 8 symbols
 .mask8:
 	mov RBX, RAX			; Copy the RAX register into RBX
 	shl	RAX, 8				; Shift left RAX by one byte to get the next 8 bits next iteration
@@ -139,22 +141,24 @@ Decode8:
 	jb .number8				; If the value is bellow jump to the number8 label
 	jmp .letter8			; Else jump the letter8 label
 
+; Convert back the letters
 .letter8:
 	shl RDX, 5				; Shift left RDX by 5 bits
 	sub RBX, 41h			; Subtract the value of the first possible letter (41h = A) from RAX
 	or DL, BL				; Move the next 5 bits from AL to DL
 	inc RCX					; Increment counter
 
-	cmp RCX, 8				; Check if all  8 bytes have been converted to original value
+	cmp RCX, 8				; Check if all 8 bytes have been converted to original value
 	jne .mask8				; If not repeat the loop
 	xor RCX, RCX			; Reset counter
 	shl RDX, 24				; Shift left the RDX register by 3 bytes
 	mov R11, STRLEN			; Move the string length to the R11 register
 	jmp memory				; Jump to the memory function
 
+; Convert back the numbers
 .number8:
 	shl RDX, 5				; Rotate right RDX by 5 bits
-	sub RBX, 18h
+	sub RBX, 18h			; Subtract 24 from RBX
 	or DL, BL				; Move the value into DL accoring to the decoding table
 	inc RCX					; Increment the counter by 1
 
@@ -165,6 +169,7 @@ Decode8:
 	mov R11, STRLEN			; Move the string length to the R11 register
 	jmp memory				; Jump to the memory function
 
+; Decode symbols
 Decode:
 	xor RAX, RAX			; First of all reset the RAX register
 	mov RDX, 8				; Move 8 to the RDX
@@ -243,15 +248,13 @@ Decode:
 	mov RBX, RAX			; Copy the RAX register into RBX
 	shl	RAX, 8				; Shift left RAX by one byte to get the next 8 bits next iteration
 	shr	RBX, 56				; Shift right RBX by 7 bytes to mask out the most significant byte
-
 	cmp BL, 0Ah				; Ignore EOL
 	je .setflag				; Jump to the setflag label
-
-
 	cmp BL, 40h				; Compare the BL register with 64
 	jb .number				;
 	jmp .letter				; Else jump to the letter label
 
+; Convert letters
 .letter:
 	shl RDX, 5				; Shift left RDX by 5 bits
 	sub RBX, 41h			; Subtract the value of the first possible letter (41h = A) from RAX
@@ -263,6 +266,7 @@ Decode:
 	pop RBX					; Move the first entry of the stack to RBX
 	jmp .delZero			; Jump to the .delZero label
 
+; Convert numbers
 .number:
 	shl RDX, 5				; Rotate right RDX by 5 bits
 	sub RBX, 18h			; Subtracting 18 from RBX
@@ -301,11 +305,13 @@ memory:
 	cmp RCX, 5				; Compare the counter with 5
 	jne memory				; If the counter is not 5 repeat the loop
 
+; Call the print func and Read again
 .print:
 	call Print				; Call the Print function
 
 	jmp ReadBuff			; Jump to the ReadBuff function
 
+; Correct exit of the program
 Exit:
 	mov	RAX, 60				; Clean exit of program
 	mov	RDI, 0
