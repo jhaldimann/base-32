@@ -92,13 +92,28 @@ loopEndChars:
 	ja Decode
 	jmp Decode8
 
+ReadOneByte:
+	call ResetBuffAndStr	; Reset buff and str for the next input
+	mov	RAX, 3				; Get input from user
+	mov	RBX, 0
+	mov	RCX, Buff			; Write memory address from buff
+	mov	RDX, 1				; Length that should be read
+	int 80h					; Make kernel call
+	cmp RAX, 0				; Check if there were no bytes read
+	je Exit					; Exit the program if nothing was read
+
 ; Decodes 8 symbols 
 Decode8:
 	xor RCX, RCX			; Reset RCX register
 	xor RAX, RAX			; Reset RAX register
 	xor RBX, RBX			; Reset RBX register
 	xor RDX, RDX			; Reset RDX register
-	
+	jmp .loop8
+
+.setflag8:
+	mov R11, 1
+	jmp .mask8
+
 .loop8:
 	shl	RAX, 8				; Shift left by 1 byte
 	mov AL, byte [Buff+RCX] ; Write the byte at the Buff address + counter in AL
@@ -109,13 +124,16 @@ Decode8:
 
 	push RCX				; Push counter on stack
 	xor RCX, RCX			; Reset counter
+	mov R11, 0
+
+
 .mask8:
 	mov RBX, RAX			; Copy the RAX register into RBX
 	shl	RAX, 8				; Shift left RAX by one byte to get the next 8 bits next iteration
 	shr	RBX, 56				; Shift right RBX by 7 bytes to mask out the most significant byte
 
 	cmp BL, 0Ah				; Ignore EOL
-	je .mask8
+	je .setflag8
 
 	cmp BL, 40h
 	jb .number8
@@ -156,6 +174,11 @@ Decode:
 	mov R10, 8
 	sub R10, RCX
 	xor RCX, RCX
+	jmp .loop
+
+.setflag:
+	mov R11, 1
+	jmp .mask
 
 .loop:
 	shl RAX, 8
@@ -222,7 +245,7 @@ Decode:
 	shr	RBX, 56				; Shift right RBX by 7 bytes to mask out the most significant byte
 
 	cmp BL, 0Ah				; Ignore EOL
-	je .mask
+	je .setflag
 
 
 	cmp BL, 40h
