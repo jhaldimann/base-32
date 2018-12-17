@@ -1,8 +1,8 @@
 ; Name			: base32dec
 ; Authors		: Haldimann Julian, Gasser Manuel
 ; Created		: 05/11/2018
-; Last updated	: 16/12/2018
-; Description	: Small assemBLy program to decode data with base32
+; Last updated	: 18/12/2018
+; Description	: Small assembly program to decode data with base32
 
 ; Data section
 SECTION .bss					; Section of uninitialised data
@@ -13,8 +13,9 @@ SECTION .bss					; Section of uninitialised data
 	
 SECTION .data
 	; reverse table to get 5 bit value from ASCII value -50 as offset
-	Table: db 26,27,28,29,30,31,0,0,0,0,0,0,0,0,0,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25
-	TABLELEN equ $-Table
+	Table: 	db 1Ah,1Bh,1Ch,1Dh,1Eh,1Fh,00h,00h,00h,00h,00h,00h,00h,00h,00h,00h
+			db 01h,02h,03h,04h,05h,06h,07h,08h,09h,0Ah,0Bh,0Ch,0Dh,0Eh,0Fh,10h
+			db 11h,12h,13h,14h,15h,16h,17h,18h,19h,00h,00h,00h,00h,00h,00h,00h
 	
 SECTION .text		; Section of code
 	
@@ -29,15 +30,13 @@ Read:
 	mov RBP, RAX				; Save # of bytes read from file
 	cmp RBP, 0					; If RBP=0, sys_read reached EOF on stdin	
 	je Exit						; If RBP is equal to 0 jump to exit (nothing todo here)
-	mov DL, byte [Buff]			; get the read byte to RDX
-	;cmp DL,13					; if its CR
-	;je Read			
-	cmp DL, 10					; or LF (CRLF is a new line, skip that)
+	mov DL, byte [Buff]			; get the read byte to RDX		
+	cmp DL, 0ah					; or LF (CRLF is a new line, skip that)
 	je Read						; Read the next byte
 	cmp DL, "="					; if its a "="
-	jne NotEquiv
+	jne NotEqual
 	inc R8						; Increment the counter by 1
-	jmp IsEquiv					; Jump to the function ...
+	jmp IsEqual					; Jump to the function ...
 
 ReadBuff:
 	; Input:
@@ -93,12 +92,12 @@ PrintString:
 	
 	ret
 
-NotEquiv:						; standard case
+NotEqual:						; standard case
 	sub RDX, 32h				; remove 32h from ascii vALue of read character, this helps keeping the translation table smaller
 	mov CL, byte [Table+RDX]	; use the ascii value -50 as offset to get the 5bit value to CL
 	add RDI, RCX				; add RCX to RDI, had an issue with keeping the result in RCX, adding solved this
 
-IsEquiv:
+IsEqual:
 	inc RSI						; increase counter for read bytes (will continue when 8)
 	shl RDI, 5					; shift 5 bits left
 	cmp RSI, 8					; continue translating if 8 bytes are read
@@ -112,30 +111,30 @@ Translate:
 	xor RDI, RDI				; Reset the RDI register
 	xor RCX, RCX				; Reset the RCX register
 	xor RDX, RDX				; Reset the RDX register
-	mov RDI, 0					; RDI holds the vALue where to stop printing
-	mov CL, 40					; RCX holds the vALue how much shifting is needed to get 8 bits to print
+	mov RDI, 0					; RDI holds the value where to stop printing
+	mov CL, 40					; RCX holds the value how much shifting is needed to get 8 bits to print
 	
 	cmp R8, 6					; different cases for = occurences
-	je Equiv6					; go to according case
+	je Equal6					; go to according case
 	cmp R8, 4
-	je Equiv4
+	je Equal4
 	cmp R8, 3
-	je Equiv3
+	je Equal3
 	cmp R8, 1
-	je Equiv1
+	je Equal1
 	jmp Print					; default case is no =
 	
 	
-Equiv6:							; print 1 byte
+Equal6:							; print 1 byte
 	add RDI, 8					; 6 = has to stop after 1 printed byte -> need 32
 	
-Equiv4:							; print 2 bytes
+Equal4:							; print 2 bytes
 	add RDI, 8					; 4 = has to stop after 2 printed bytes -> need 24
 	
-Equiv3:							; print 3 bytes
+Equal3:							; print 3 bytes
 	add RDI, 8					; 3 = has to stop after 3 printed bytes -> 16
 	
-Equiv1:							; print 4 bytes
+Equal1:							; print 4 bytes
 	add RDI, 8					; 1 = has to stop after 4 printed bytes -> 8
 	
 Print:							; print 5 bytes
