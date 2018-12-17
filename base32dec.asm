@@ -64,7 +64,7 @@ ReadBuff:
 	xor R10, R10			; Reset R10 to use as counter
 	call ResetBuffAndStr	; Reset buff and str for the next input
 	mov	RAX, 3				; Get input from user
-	mov	RBX, 0
+	mov	RBX, 0				; Get input from user
 	mov	RCX, Buff			; Write memory address from buff
 	mov	RDX, BUFFLEN		; Length that should be read
 	int 80h					; Make kernel call
@@ -75,22 +75,22 @@ ReadBuff:
 	xor RBX, RBX
 	
 loopEndChars:
-	cmp RCX,8
-	je .if
+	cmp RCX,8				; Check if the counter(RCX) equals to 8
+	je .if					; If counter is 8 jump to the if label
 
 	mov AL, byte [Buff+RCX]
-	inc RCX
-	cmp AL, "="
-	jne loopEndChars
+	inc RCX					; Incremenet the counter (RCX)
+	cmp AL, "="				; Check if the AL is an =
+	jne loopEndChars		; If not repeat the loop
 
 .equal:
-	inc RBX
-	jmp loopEndChars
+	inc RBX					; Increment the RBX register by 1
+	jmp loopEndChars		; Jump to the loopEndChars again
 
 .if:
-	cmp RBX, 0
-	ja Decode
-	jmp Decode8
+	cmp RBX, 0				; If RBX equals to 0
+	ja Decode				; If RBX is higher jump to Decode label 
+	jmp Decode8				; Jump to Decode8 function
 
 ReadOneByte:
 	call ResetBuffAndStr	; Reset buff and str for the next input
@@ -111,8 +111,8 @@ Decode8:
 	jmp .loop8
 
 .setflag8:
-	mov R11, 1
-	jmp .mask8
+	mov R11, 1				; Set the R11 register to 1
+	jmp .mask8				; Jump to the mask8 label
 
 .loop8:
 	shl	RAX, 8				; Shift left by 1 byte
@@ -124,7 +124,7 @@ Decode8:
 
 	push RCX				; Push counter on stack
 	xor RCX, RCX			; Reset counter
-	mov R11, 0
+	mov R11, 0				; Set R11 to 0
 
 
 .mask8:
@@ -133,11 +133,11 @@ Decode8:
 	shr	RBX, 56				; Shift right RBX by 7 bytes to mask out the most significant byte
 
 	cmp BL, 0Ah				; Ignore EOL
-	je .setflag8
+	je .setflag8			; If the value of BL is an EOL jump to the function
 
-	cmp BL, 40h
-	jb .number8
-	jmp .letter8
+	cmp BL, 40h				; Compare the BL register with 8 bytes
+	jb .number8				; If the value is bellow jump to the number8 label
+	jmp .letter8			; Else jump the letter8 label
 
 .letter8:
 	shl RDX, 5				; Shift left RDX by 5 bits
@@ -148,57 +148,57 @@ Decode8:
 	cmp RCX, 8				; Check if all  8 bytes have been converted to original value
 	jne .mask8				; If not repeat the loop
 	xor RCX, RCX			; Reset counter
-	shl RDX, 24
-	mov R11, STRLEN
-	jmp memory				
+	shl RDX, 24				; Shift left the RDX register by 3 bytes
+	mov R11, STRLEN			; Move the string length to the R11 register
+	jmp memory				; Jump to the memory function
 
 .number8:
 	shl RDX, 5				; Rotate right RDX by 5 bits
 	sub RBX, 18h
 	or DL, BL				; Move the value into DL accoring to the decoding table
-	inc RCX
+	inc RCX					; Increment the counter by 1
 
-	cmp RCX, 8
-	jne .mask8
-	xor RCX, RCX
-	shl RDX, 24
-	mov R11, STRLEN
-	jmp memory
+	cmp RCX, 8				; Compare the Counter with 8
+	jne .mask8				; If not jump to the mask8 label
+	xor RCX, RCX			; Reset the counter(RCX)
+	shl RDX, 24				; Shift left the RDX label by 3 bytes
+	mov R11, STRLEN			; Move the string length to the R11 register
+	jmp memory				; Jump to the memory function
 
 Decode:
-	xor RAX, RAX
-	mov RDX, 8
-	sub RDX, RBX
-	mov R9, RDX
-	mov RCX, RDX
-	mov R10, 8
-	sub R10, RCX
-	xor RCX, RCX
-	jmp .loop
+	xor RAX, RAX			; First of all reset the RAX register
+	mov RDX, 8				; Move 8 to the RDX
+	sub RDX, RBX			; Subtract the RBX register from RDX
+	mov R9, RDX				; Move the result to the R9 register
+	mov RCX, RDX			; Move the result to the RCX register
+	mov R10, 8				; Move 1 byte to the R10 register
+	sub R10, RCX			; Subtract the RCX from the R10 register
+	xor RCX, RCX			; Reset the RCX register
+	jmp .loop				; Jump to the loop label
 
 .setflag:
-	mov R11, 1
-	jmp .mask
+	mov R11, 1				; Set the R11 register to 1
+	jmp .mask				; Jump to the mask label
 
 .loop:
-	shl RAX, 8
-	mov AL, byte[Buff+RCX]
-	inc RCX
-	cmp RDX,RCX
-	jne .loop
+	shl RAX, 8				; Shift left the RAX register by 1 byte
+	mov AL, byte[Buff+RCX]	;
+	inc RCX					; Increment the counter(RCX) by 1
+	cmp RDX,RCX				; Compare the RCX with the RDX register
+	jne .loop				; If not equal repeat the loop
 
-	xor RCX, RCX
-	xor RDX, RDX
+	xor RCX, RCX			; Reset the RCX 
+	xor RDX, RDX			; Reset the RDX
 
-	cmp RAX,0
-	jne .loopshift
+	cmp RAX,0				; Check if the RAX register equals to 0
+	jne .loopshift			; If not jump to the loopshift
 
 .loopshift:
-	dec R10
-	shl RAX, 8
-	cmp R10,0
-	je .todo
-	jmp .loopshift
+	dec R10					; Decrement R10 by 1
+	shl RAX, 8				; Shift left the RAX register by one byte
+	cmp R10, 0				; Compare the R10 Register with 0
+	je .todo				; If R10 is 0 jump to todo
+	jmp .loopshift			; Else jump to the loopshift
 
 .todo:
 	xor RCX, RCX
@@ -215,29 +215,29 @@ Decode:
 	je .zero3				; Jump to equal1 if RBX is 3
 
 .zero1:
-	mov RBX, 1
-	push RBX
-	jmp .mask
+	mov RBX, 1				; Set RBX to 1
+	push RBX				; Push the RBX value to the stack
+	jmp .mask				; Jump again to the mask label
 
 .zero2:
-	mov RBX, 2
-	push RBX
-	jmp .mask
+	mov RBX, 2				; Set RBX to 2
+	push RBX				; Push the RBX value to the stack
+	jmp .mask				; Jump again to the mask label
 
 .zero3:
-	mov RBX, 3
-	push RBX
-	jmp .mask
+	mov RBX, 3				; Set RBX to 3
+	push RBX				; Push the RBX value to the stack
+	jmp .mask				; Jump again to the mask label
 
 .zero4:
-	mov RBX, 4
-	push RBX
-	jmp .mask
+	mov RBX, 4				; Set RBX to 4
+	push RBX				; Push the RBX value to the stack
+	jmp .mask				; Jump again to the mask label
 
 .zero6:
-	mov RBX, 6
-	push RBX
-	jmp .mask
+	mov RBX, 6				; Set RBX to 6
+	push RBX				; Push the RBX value to the stack
+	jmp .mask				; Jump again to the mask label
 
 .mask:
 	mov RBX, RAX			; Copy the RAX register into RBX
@@ -245,12 +245,12 @@ Decode:
 	shr	RBX, 56				; Shift right RBX by 7 bytes to mask out the most significant byte
 
 	cmp BL, 0Ah				; Ignore EOL
-	je .setflag
+	je .setflag				; Jump to the setflag label
 
 
-	cmp BL, 40h
-	jb .number
-	jmp .letter
+	cmp BL, 40h				; Compare the BL register with 64
+	jb .number				;
+	jmp .letter				; Else jump to the letter label
 
 .letter:
 	shl RDX, 5				; Shift left RDX by 5 bits
@@ -260,50 +260,51 @@ Decode:
 	cmp RCX, R9				; Check if all bytes have been converted to original value
 	jne .mask				; If not repeat the loop
 
-	pop RBX	
-	jmp .delZero
+	pop RBX					; Move the first entry of the stack to RBX
+	jmp .delZero			; Jump to the .delZero label
 
 .number:
 	shl RDX, 5				; Rotate right RDX by 5 bits
-	sub RBX, 18h
+	sub RBX, 18h			; Subtracting 18 from RBX
 	or DL, BL				; Move the value into DL accoring to the decoding table
-	inc RCX
+	inc RCX					; Increment the counter RCX
 
-	cmp RCX, R9
-	jne .mask
+	cmp RCX, R9				; Compare the counter with R9
+	jne .mask				; If not jump to the mask label
 
-	pop RBX
-	jmp .delZero
+	pop RBX					; Move the first value of the stack to the RBX
+	jmp .delZero			; Jump to the delZero label
 
 .delZero:
-	shr RDX, 1
-	dec RBX
-	cmp RBX, 0
-	jne .delZero	
+	shr RDX, 1				; Shift right the RDX by 1 bit
+	dec RBX					; Decrement the counter(RBX) by 1
+	cmp RBX, 0				; Compare the counter with 0
+	jne .delZero			; If RBX not 0 repeat
 	xor RCX, RCX			; Reset counter		
 
 .roll:
 	ror RDX, 8
-	inc RCX
-	cmp DL, 0
-	jne .roll
+	inc RCX					; Increment RCX by 1
+	cmp DL, 0				; Compare the counter(DL) register with 0
+	jne .roll				; If DL not 0 repeat the loop
 
-	mov R11, RCX
-	xor RCX, RCX
+	mov R11, RCX			; Move the RCX value to R11
+	xor RCX, RCX			; Reset the RCX register
+
 memory:
-	rol RDX, 8
-	cmp DL, 0
-	je .print
+	rol RDX, 8		
+	cmp DL, 0				; Compare the DL register with 0	
+	je .print				; If DL is equal to 0 start to print
 
 	mov byte [Str+RCX], DL
-	inc RCX
-	cmp RCX, 5
-	jne memory
+	inc RCX					; Increment the counter 
+	cmp RCX, 5				; Compare the counter with 5
+	jne memory				; If the counter is not 5 repeat the loop
 
 .print:
-	call Print
+	call Print				; Call the Print function
 
-	jmp ReadBuff
+	jmp ReadBuff			; Jump to the ReadBuff function
 
 Exit:
 	mov	RAX, 60				; Clean exit of program
