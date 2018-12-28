@@ -1,61 +1,64 @@
 ; Name			: base32enc
 ; Authors		: Haldimann Julian, Gasser Manuel
 ; Created		: 05/11/2018
-; Last updated	: 16/12/2018
+; Last updated	: 28/12/2018
 ; Description	: Small assembly program to encode data to base32
 
-; Data section
 section .data
 	; Encode table
 	EncTable:
 		db 41h, 42h, 43h, 44h, 45h, 46h, 47h, 48h, 49h, 4Ah, 4Bh, 4Ch, 4Dh, 4Eh, 4Fh, 50h
 		db 51h, 52h, 53h, 54h, 55h, 56h, 57h, 58h, 59h, 5Ah, 32h, 33h, 34h, 35h, 36h, 37h
-	; End of line
+
 	EOL: db 0Ah					; Define endofline const
 	EOLLEN: equ $-EOL			; Define endofline length
 
-; BSS section
 section .bss
 	; Buffer for input
-	BUFFLEN	equ 5				; We read the file 16 bytes at a time
+	BUFFLEN	equ 5				; We read the input 5 bytes at a time
 	Buff: resb BUFFLEN			; Text buffer itself
+
 	; String for output
 	STRLEN	equ 8				; Define output length to 8
 	Str: resb STRLEN			; Reserve 8 bytes
 
-; Text section
 section .text
 
 global _start
 
 ; Procedures
 Print:
-	mov	RAX, 4					; Set mode to output
-	mov	RBX, 1					; Set mode to output
+	; Set mode to output
+	mov	RAX, 4
+	mov	RBX, 1
+
 	mov	RCX, Str				; Move memory address of Str location in RSI
 	mov	RDX, R12				; Move length to print in RDX
-	push R9						; Push R9 value to the stack to save
+	push R9						; Push R9 value to the stack
 	int 80h						; Make a syscall
 	pop R9						; Pop first value of stack to R9
 	ret							; Make a return call
 
 ResetBuffAndStr:
-	push RAX					; Push data from stack to RAX
-	push RCX					; Push data from stack to RCX
+	; Move RAX and RCX value to stack
+	push RAX
+	push RCX
+	
 	; Reset Str address
 	xor RAX, RAX				; Reset data from RAX
 	mov [Str], RAX				; Move value of RAX to Str (string length) 
+	
 	; Reset the Buff
-	xor RCX, RCX				; Reset data from RCX (buff)
+	xor RCX, RCX				; Reset data from RCX (Buff)
 
 .reset:
-	mov byte [Buff+RCX], AL		
+	mov byte [Buff+RCX], AL		; Reset of one byte in Buff
 	inc RCX						; Increase counter
-	cmp RCX, 5					; Check if RCX is 5 else loop
+	cmp RCX, BUFFLEN			; Check if RCX is equal to BUFFLEN else loop
 	jne .reset					; Jump to reset label if not equal
-	pop RCX						; Add data from stack to RCX
-	pop RAX						; Add data from stack to RAX
-	ret							; Return call
+	pop RCX						; Pop data from stack to RCX
+	pop RAX						; Pop data from stack to RAX
+	ret
 
 ; Start of the program
 _start:
@@ -66,7 +69,7 @@ ReadBuff:
 	call ResetBuffAndStr		; Call function ResetBuffAndStr
 	mov	RAX, 3					; Get input from user
 	mov	RBX, 0					; Get input from user
-	mov	RCX, Buff				; Write memory address from buff
+	mov	RCX, Buff				; Write memory address from Buff
 	mov	RDX, BUFFLEN			; Length that should be read
 	push R9						; Add value of R9 to stack
 	int 80h						; Make kernel call
@@ -99,7 +102,7 @@ Encode5:
 .mask5:
 	cmp R9, 76					; Check if the value of R9 is 76 (length of one line) 
 	jne .continue5				; If not jump to the label .continue5
-	mov byte[Str+R10], 0Ah
+	mov byte[Str+R10], 0Ah		; Add EOL to Str
 	inc R10						; Add 1 to our counter R10
 	mov R12, 9					; Add 9 to R12
 	xor R9, R9					; Reset the R9 register
@@ -176,7 +179,7 @@ Encode:
 	jmp equal1					; Jump to equal1 if RBX is 3
 
 equal6:
-	mov byte[Str+R10], 3Dh		; 
+	mov byte[Str+R10], "="		; Move "=" to Str
 	inc R10						; Increase R10
 	inc RCX						; Increase RCX
 	cmp RCX, 6					; Check if RCX is 6
@@ -185,7 +188,7 @@ equal6:
 	jmp Exit					; Jump to exit label
 
 equal4:
-	mov byte[Str+R10], 3Dh		; 
+	mov byte[Str+R10], "="		; Move "=" to Str
 	inc R10						; Increase R10
 	inc RCX						; Increase RCX
 	cmp RCX, 4					; Check if RCX is 4
@@ -194,7 +197,7 @@ equal4:
 	jmp Exit					; Jump to exit label
 
 equal3:
-	mov byte[Str+R10], 3Dh		; 
+	mov byte[Str+R10], "="		; Move "=" to Str
 	inc R10						; Increase R10
 	inc RCX						; Increase RCX
 	cmp RCX, 3					; Check if RCX is 3
@@ -203,7 +206,7 @@ equal3:
 	jmp Exit					; Jump to exit label
 
 equal1:
-	mov byte[Str+R10], 3Dh		; 
+	mov byte[Str+R10], "="		; Move "=" to Str
 	inc R10						; Increase R10
 	inc RCX						; Increase RCX
 	cmp RCX, 1					; Check if RCX is 1
